@@ -15,11 +15,9 @@ document.addEventListener('DOMContentLoaded', () => {
     // Create cue ball and target ball
     const cueBall = document.createElement('div');
     cueBall.classList.add('ball', 'cue-ball');
-    placeBall(cueBall, 15, 5); // Default position
 
     const targetBall = document.createElement('div');
     targetBall.classList.add('ball', 'target-ball');
-    placeBall(targetBall, 4, 5); // Default position
 
     // Append balls to the grid
     grid.appendChild(cueBall);
@@ -32,13 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (cell) {
             const cellRect = cell.getBoundingClientRect();
             const gridRect = grid.getBoundingClientRect();
-            console.log (cellRect);
 
-            // Calculate center of the cell
             const centerX = cellRect.left - gridRect.left + (cellRect.width / 2);
             const centerY = cellRect.top - gridRect.top + (cellRect.height / 2);
 
-            // Calculate top-left corner of the ball such that its center is at the cell's center
             const ballLeft = centerX - (ball.offsetWidth / 2);
             const ballTop = centerY - (ball.offsetHeight / 2);
 
@@ -50,39 +45,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    // Use a timeout to allow for ball dimensions to be calculated
+    setTimeout(() => {
+        placeBall(cueBall, 15, 5); // Default position
+        placeBall(targetBall, 4, 5); // Default position
+    }, 0);
+
     // Dragging functionality
     let draggedBall = null;
     let offsetX = 0;
     let offsetY = 0;
 
-    [cueBall, targetBall].forEach(ball => {
-        ball.addEventListener('mousedown', (e) => {
-            draggedBall = ball;
-            ball.style.zIndex = 10;
+    function startDrag(ball, e) {
+        draggedBall = ball;
+        ball.style.zIndex = 10;
 
-            const rect = ball.getBoundingClientRect();
-            offsetX = e.clientX - rect.left + (ball.offsetWidth / 6);
-            offsetY = e.clientY - rect.top + (ball.offsetHeight / 6);
+        const rect = ball.getBoundingClientRect();
+        const clientX = e.touches ? e.touches[0].clientX : e.clientX; // Handle touch event
+        const clientY = e.touches ? e.touches[0].clientY : e.clientY; // Handle touch event
 
-            e.preventDefault();
-        });
-    });
+        offsetX = clientX - rect.left + (ball.offsetWidth / 6);
+        offsetY = clientY - rect.top + (ball.offsetHeight / 6);
 
-    const gridRect = grid.getBoundingClientRect();
+        e.preventDefault();
+    }
 
-    document.addEventListener('mousemove', (e) => {
+    function moveBall(e) {
         if (draggedBall) {
-            // Calculate cursor position relative to the grid
-            const relativeX = e.clientX - gridRect.left;
-            const relativeY = e.clientY - gridRect.top;
+            const relativeX = e.touches ? e.touches[0].clientX - grid.getBoundingClientRect().left : e.clientX - grid.getBoundingClientRect().left;
+            const relativeY = e.touches ? e.touches[0].clientY - grid.getBoundingClientRect().top : e.clientY - grid.getBoundingClientRect().top;
 
-            // Set position based on relative cursor position and offsets
             draggedBall.style.top = `${relativeY - offsetY}px`;
             draggedBall.style.left = `${relativeX - offsetX}px`;
         }
-    });
+    }
 
-    document.addEventListener('mouseup', () => {
+    function endDrag() {
         if (draggedBall) {
             const cell = getCellUnderMouse(draggedBall);
             if (cell) {
@@ -92,7 +90,31 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             draggedBall = null;
         }
+    }
+
+    // Event listeners for both mouse and touch events
+    [cueBall, targetBall].forEach(ball => {
+        ball.addEventListener('mousedown', (e) => startDrag(ball, e));
+        ball.addEventListener('touchstart', (e) => startDrag(ball, e), { passive: false }); // Prevent scrolling
+
+        ball.addEventListener('mouseup', endDrag);
+        ball.addEventListener('touchend', endDrag); // End drag on touch
+
+        ball.addEventListener('mousemove', moveBall);
+        ball.addEventListener('touchmove', (e) => {
+            moveBall(e);
+            e.preventDefault(); // Prevent scrolling
+        }, { passive: false }); // Prevent scrolling
     });
+
+    document.addEventListener('mousemove', moveBall);
+    document.addEventListener('touchmove', (e) => {
+        moveBall(e);
+        e.preventDefault(); // Prevent scrolling
+    }, { passive: false });
+
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
 
     function getCellUnderMouse(ball) {
         const cells = Array.from(grid.children);
