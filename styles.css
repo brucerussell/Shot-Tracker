@@ -10,28 +10,30 @@ body {
 
 .pool-table {
     position: relative;
-    width: 400px; /* Length of the long side */
-    height: 800px; /* Length of the short side */
+    width: 360px; /* Length of the long side */
+    height: 720px; /* Length of the short side */
     background-color: #004d00; /* Felt color */
-    border: 10px solid #704b0a; /* Table border color */
+    border: 17px solid #704b0a; /* Table border color */
     border-radius: 10px;
-    overflow: hidden; /* Ensures grid stays within the table */
+    margin-top: 15px;
 }
 
 .pocket {
     position: absolute;
-    background-color: #000; /* Pocket color */
+    background-color: #503216;
     width: 40px;
     height: 40px;
     border-radius: 50%;
+    border: 1px solid white;
+/*    z-index: 1;*/
 }
 
-.top-left { top: 0; left: 0; margin: -20px; }
-.top-right { top: 0; right: 0; margin: -20px; }
-.bottom-left { bottom: 0; left: 0; margin: -20px; }
-.bottom-right { bottom: 0; right: 0; margin: -20px; }
-.left-middle { left: 0; top: 50%; transform: translate(-50%, -50%); margin-left: -8px; }
-.right-middle { right: 0; top: 50%; transform: translate(50%, -50%); margin-right: -8px; }
+.top-left { top: 0; left: 0; margin: -25px; border-radius: 25% 50% 50% 50%;}
+.top-right { top: 0; right: 0; margin: -25px; border-radius: 50% 25% 50% 50%;}
+.bottom-left { bottom: 0; left: 0; margin: -25px; border-radius: 50% 50% 50% 25%;}
+.bottom-right { bottom: 0; right: 0; margin: -25px; border-radius: 50% 50% 25% 50%;}
+.left-middle { left: 0; top: 50%; transform: translate(-50%, -50%); margin-left: -8px; border-radius: 25% 50% 50% 25%;}
+.right-middle { right: 0; top: 50%; transform: translate(50%, -50%); margin-right: -8px; border-radius: 50% 25% 25% 50%;}
 
 .grid {
     position: absolute;
@@ -40,27 +42,40 @@ body {
     width: 100%;
     height: 100%;
     display: grid;
-    grid-template-columns: repeat(10, 1fr); /* 20 columns */
-    grid-template-rows: repeat(20, 1fr); /* 10 rows */
-    pointer-events: none; /* Allow clicks to pass through the grid container */
+    grid-template-columns: repeat(11, 1fr); /* 11 columns */
+    grid-template-rows: repeat(21, 1fr); /* 21 rows */
+    pointer-events: auto; /* Change to allow events on grid */
 }
 
 .cell {
-    border: 1px solid rgb(124, 158, 114, 0.23);
+    border: 1px solid rgb(36, 98, 36, 0.5);
     background-color: rgba(0, 0, 0, 0.2);
     cursor: pointer;
-    transition: background-color 0.3s;
+    position: relative;
 }
 
-.cell.selected {
-    background-color: rgba(0, 255, 0, 0.5);
+.ball {
+    position: absolute;
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
 }
 
-.cell.cue-ball {
-    background-color: rgba(255, 255, 255, 0.5);
+.cue-ball {
+    background-color: white;
 }
 
-.cell.target-ball {
-    background-color: rgba(255, 0, 0, 0.5);
+.target-ball {
+    background-color: #2fd0cd;
 }
 
+.shot-buttons {
+    text-align: center;
+    position: absolute;
+    top: 0px;
+}
+
+.shot-buttons > button {
+    padding: 10px;
+    width: 100px;
+}
