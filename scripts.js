@@ -1,3 +1,21 @@
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyCVtMeyc-5EmeCbFsEtJGHEYzyuuLcT8bA",
+    authDomain: "shot-tracker-f9823.firebaseapp.com",
+    projectId: "shot-tracker-f9823",
+    storageBucket: "shot-tracker-f9823.appspot.com",
+    messagingSenderId: "28405149666",
+    appId: "1:28405149666:web:ef08e8add96e603838d3bb",
+    measurementId: "G-FCJ9MQMQZJ"
+};
+
+// Initialize Firebase and Firestore
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
 document.addEventListener('DOMContentLoaded', () => {
     const grid = document.querySelector('.grid');
     const rows = 21;
@@ -48,7 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Use a timeout to allow for ball dimensions to be calculated
     setTimeout(() => {
         placeBall(cueBall, 15, 5); // Default position
-        placeBall(targetBall, 4, 5); // Default position
+        placeBall(targetBall, 5, 5); // Default position
     }, 0);
 
     // Dragging functionality
@@ -131,4 +149,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return null;
     }
+
+    function storeShot(state) {
+        const shotData = {
+            pocket: selectedPocket,
+            cueBallLocation: { row: 15, col: 5 }, // Replace with actual values
+            targetBallLocation: { row: 5, col: 5 }, // Replace with actual values
+            state: state,
+            timestamp: serverTimestamp() // No need for 'firebase' here
+        };
+    
+        // Use the imported Firestore functions
+        addDoc(collection(db, 'shots'), shotData)
+            .then(() => {
+                console.log('Shot stored successfully');
+            })
+            .catch((error) => {
+                console.error('Error storing shot:', error);
+            });
+    }
+
+    let selectedPocket = null;
+
+    const pockets = document.querySelectorAll('.pocket');
+
+    pockets.forEach(pocket => {
+        pocket.addEventListener('click', (e) => {
+            // Deselect all pockets (optional)
+            pockets.forEach(p => p.classList.remove('selected'));
+
+            // Set the selected pocket
+            selectedPocket = e.currentTarget.dataset.pocket;
+            console.log('Selected pocket:', selectedPocket);
+
+            // Optionally, visually indicate the selected pocket
+            e.currentTarget.classList.add('selected');
+        });
+    });
+
+    document.getElementById('made-btn').addEventListener('click', () => {
+        storeShot('made');
+    });
+
+    document.getElementById('miss-btn').addEventListener('click', () => {
+        storeShot('miss');
+    });
 });

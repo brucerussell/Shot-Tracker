@@ -9,12 +9,12 @@
 <body>
     <div class="pool-table">
         <!-- Pockets -->
-        <div class="pocket top-left"></div>
-        <div class="pocket top-right"></div>
-        <div class="pocket bottom-left"></div>
-        <div class="pocket bottom-right"></div>
-        <div class="pocket left-middle"></div>
-        <div class="pocket right-middle"></div>
+        <div class="pocket top-left" data-pocket="top-left"></div>
+        <div class="pocket top-right" data-pocket="top-right"></div>
+        <div class="pocket bottom-left" data-pocket="bottom-left"></div>
+        <div class="pocket bottom-right" data-pocket="bottom-right"></div>
+        <div class="pocket left-middle" data-pocket="left-middle"></div>
+        <div class="pocket right-middle" data-pocket="right-middle"></div>
 
         <!-- Grid -->
         <div class="grid">
@@ -22,9 +22,9 @@
         </div>
     </div>
     <div class="shot-buttons">
-        <button>Made</button>
-        <button>Miss</button>
+        <button id="made-btn">Made</button>
+        <button id="miss-btn">Miss</button>
     </div>
-    <script src="scripts.js"></script>
+    <script type="module" src="scripts.js"></script>
 </body>
 </html>

@@ -3,19 +3,20 @@ body {
     display: flex;
     justify-content: center;
     align-items: center;
-    height: 100vh;
-    background-color: #e0e0e0;
+    height: 86vh;
+    background-color: #2d2215;
     margin: 0;
 }
 
 .pool-table {
     position: relative;
-    width: 360px; /* Length of the long side */
-    height: 720px; /* Length of the short side */
-    background-color: #004d00; /* Felt color */
-    border: 17px solid #704b0a; /* Table border color */
+    width: 324px;
+    height: 648px;
+    background-color: #004d00;
+    border: 17px solid #704b0a;
     border-radius: 10px;
     margin-top: 15px;
+    box-shadow: 0px 0px 25px;
 }
 
 .pocket {
@@ -24,16 +25,21 @@ body {
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 1px solid white;
-/*    z-index: 1;*/
+    border: 2px solid #704b09;
+    z-index: 1;
+    box-shadow: 0px 0px 10px inset #1c1200;
 }
 
-.top-left { top: 0; left: 0; margin: -25px; border-radius: 25% 50% 50% 50%;}
-.top-right { top: 0; right: 0; margin: -25px; border-radius: 50% 25% 50% 50%;}
-.bottom-left { bottom: 0; left: 0; margin: -25px; border-radius: 50% 50% 50% 25%;}
-.bottom-right { bottom: 0; right: 0; margin: -25px; border-radius: 50% 50% 25% 50%;}
+.top-left { top: 0; left: 0; margin: -25px; border-radius: 25% 25% 50% 25%;}
+.top-right { top: 0; right: 0; margin: -25px; border-radius: 25% 25% 25% 50%;}
+.bottom-left { bottom: 0; left: 0; margin: -25px; border-radius: 25% 50% 25% 25%;}
+.bottom-right { bottom: 0; right: 0; margin: -25px; border-radius: 50% 25% 25% 25%;}
 .left-middle { left: 0; top: 50%; transform: translate(-50%, -50%); margin-left: -8px; border-radius: 25% 50% 50% 25%;}
 .right-middle { right: 0; top: 50%; transform: translate(50%, -50%); margin-right: -8px; border-radius: 50% 25% 25% 50%;}
+
+.pocket.selected {
+    border: 2px solid yellow; /* Change color to indicate selection */
+}
 
 .grid {
     position: absolute;
@@ -45,6 +51,7 @@ body {
     grid-template-columns: repeat(11, 1fr); /* 11 columns */
     grid-template-rows: repeat(21, 1fr); /* 21 rows */
     pointer-events: auto; /* Change to allow events on grid */
+    box-shadow: 0px 0px 15px inset #061406;
 }
 
 .cell {
@@ -59,6 +66,7 @@ body {
     width: 25px;
     height: 25px;
     border-radius: 50%;
+    box-shadow: 0px 0px 10px;
 }
 
 .cue-ball {
@@ -75,7 +83,15 @@ body {
     top: 0px;
 }
 
+#made-btn {background-color: #006f00;}
+#miss-btn {background-color: #a40000;}
+
 .shot-buttons > button {
     padding: 10px;
-    width: 100px;
+    width: 180px;
+    font-size: 16px;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    margin-top: 5px;
 }
