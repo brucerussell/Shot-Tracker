@@ -106,13 +106,14 @@ document.addEventListener('DOMContentLoaded', () => {
             ball.style.position = 'absolute';
             ball.style.left = `${centerX - (ball.offsetWidth / 2)}px`;
             ball.style.top = `${centerY - (ball.offsetHeight / 2)}px`;
-    
+
             // Update positions
             if (ball.classList.contains('cue-ball')) {
                 cueBallPosition = { row, col };
                 generateHeatMap();  // Trigger heat map generation when cue ball moves
             } else if (ball.classList.contains('target-ball')) {
                 targetBallPosition = { row, col };
+                generateHeatMap();  // Trigger heat map generation when cue ball moves
             }
         } else {
             console.error(`Cell at row ${row}, col ${col} does not exist.`);
@@ -252,7 +253,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Set the selected pocket
             selectedPocket = e.currentTarget.dataset.pocket;
-            console.log('Selected pocket:', selectedPocket);
 
             // Optionally, visually indicate the selected pocket
             e.currentTarget.classList.add('selected');
@@ -340,9 +340,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }    
 
     async function generateHeatMap() {
+        // Get shots for the current cue ball position and selected pocket
         const shots = await getShotsForCueBallAndPocket(cueBallPosition, selectedPocket);
         const gridStats = calculateSuccessPercentages(shots);
         colorGrid(gridStats);
+    
+        // Display the percentage for the current target ball position
+        const key = `${targetBallPosition.row}-${targetBallPosition.col}`;
+        const shotPercentageDisplay = document.getElementById('shot-percentage');
+    
+        if (gridStats[key]) {
+            const { madeCount, totalCount } = gridStats[key];
+            const percentage = Math.round((madeCount / totalCount) * 100);  // Calculate percentage
+            shotPercentageDisplay.textContent = `${percentage}% success`;
+        } else {
+            shotPercentageDisplay.textContent = "No shots here";
+        }
     }
 });
 
