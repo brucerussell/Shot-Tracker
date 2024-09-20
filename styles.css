@@ -1,21 +1,28 @@
+html, body {
+    height: 100%; /* Make sure both html and body take full height */
+    margin: 0;
+    overflow-y: auto; /* Enable scrolling */
+}
 
 body {
     display: flex;
-    justify-content: center;
+    flex-direction: column;
     align-items: center;
-    height: 86vh;
     background-color: #2d2215;
     margin: 0;
+    height: auto; /* Ensure height is auto */
+    overflow-y: scroll;-webkit-overflow-scrolling: touch;
 }
 
 .pool-table {
     position: relative;
-    width: 324px;
-    height: 648px;
+    width: 307px;
+    height: 615px; /* Keep your original height */
     background-color: #004d00;
     border: 17px solid #704b0a;
     border-radius: 10px;
-    margin-top: 15px;
+    margin-top: 50px; /* Adjusted margin */
+    margin-bottom: 20px; /* Space below the table */
     box-shadow: 0px 0px 25px;
 }
 
@@ -41,8 +48,28 @@ body {
     border: 2px solid yellow; /* Change color to indicate selection */
 }
 
-.grid {
+.kitchen {
     position: absolute;
+    bottom: 23.8%;
+    z-index: 2;
+    width: 100%;
+    height: 1px;
+    background-color: #147420e3;
+}
+
+.rack {
+    position: absolute;
+    top: 25.4%;
+    left: 50%;
+    width: 8px;
+    margin-left: -4px;
+    height: 8px;
+    background-color: #129722;
+    border-radius: 50%;
+}
+
+.grid {
+    position: relative;
     top: 0;
     left: 0;
     width: 100%;
@@ -79,8 +106,8 @@ body {
 
 .shot-buttons {
     text-align: center;
-    position: absolute;
-    top: 0px;
+    position: relative; /* Change to relative to avoid fixed positioning */
+    margin-bottom: 20px; /* Space below the buttons */
 }
 
 #made-btn {background-color: #006f00;}
@@ -94,4 +121,26 @@ body {
     border: none;
     border-radius: 10px;
     margin-top: 5px;
+}
+
+/* Allow the content below to be visible */
+.content {
+    padding: 20px; /* Optional padding */
+    color: white; /* Adjust text color */
+}
+
+#user-email {
+    float: left;
+    padding-right: 40px;
+    border-bottom: 1px dashed #a66327;
+}
+
+#logout-btn {
+    float: right;
+    padding: 7px 21px;
+    margin: 9px;
+    border-radius: 5px;
+    background-color: #704b09;
+    border: none;
+    color: #f2bdbd;
 }

@@ -1,5 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -15,8 +16,55 @@ const firebaseConfig = {
 // Initialize Firebase and Firestore
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const auth = getAuth(app); // where `app` is your initialized Firebase app
+
+let currentUserUid = null;
 
 document.addEventListener('DOMContentLoaded', () => {
+
+    currentUserUid = localStorage.getItem('currentUserUid'); // Retrieve UID
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUserUid = user.uid; // Set the user ID when logged in
+            console.log('Current user UID:', currentUserUid); // Debugging line
+
+            // Display user's email
+            document.getElementById('user-email').textContent = `User: ${user.email}`;
+        } else {
+            currentUserUid = null; // Reset when logged out
+            document.getElementById('user-email').textContent = ''; // Clear email
+        }
+    });
+
+    // Logout function
+    document.getElementById('logout-btn').addEventListener('click', async () => {
+        await logoutUser();
+    });
+
+    function storeShot(state) {
+        if (!currentUserUid) {
+            console.error('No user is logged in. Shot cannot be stored.');
+            return;
+        }
+
+        const shotData = {
+            userId: currentUserUid,
+            pocket: selectedPocket,
+            cueBallLocation: cueBallPosition,
+            targetBallLocation: targetBallPosition,
+            state: state,
+            timestamp: serverTimestamp()
+        };
+
+        addDoc(collection(db, 'shots'), shotData)
+            .then(() => {
+                console.log('Shot stored successfully');
+            })
+            .catch((error) => {
+                console.error('Error storing shot:', error);
+            });
+    } 
+
     const grid = document.querySelector('.grid');
     const rows = 21;
     const cols = 11;
@@ -41,23 +89,30 @@ document.addEventListener('DOMContentLoaded', () => {
     grid.appendChild(cueBall);
     grid.appendChild(targetBall);
 
+    let cueBallPosition = { row: 15, col: 5 }; // Initial position
+    let targetBallPosition = { row: 5, col: 5 }; // Initial position
+    
     function placeBall(ball, row, col) {
         const index = row * cols + col;
         const cell = grid.children[index];
-
+    
         if (cell) {
             const cellRect = cell.getBoundingClientRect();
             const gridRect = grid.getBoundingClientRect();
-
+    
             const centerX = cellRect.left - gridRect.left + (cellRect.width / 2);
             const centerY = cellRect.top - gridRect.top + (cellRect.height / 2);
-
-            const ballLeft = centerX - (ball.offsetWidth / 2);
-            const ballTop = centerY - (ball.offsetHeight / 2);
-
+    
             ball.style.position = 'absolute';
-            ball.style.left = `${ballLeft}px`;
-            ball.style.top = `${ballTop}px`;
+            ball.style.left = `${centerX - (ball.offsetWidth / 2)}px`;
+            ball.style.top = `${centerY - (ball.offsetHeight / 2)}px`;
+    
+            // Update positions
+            if (ball.classList.contains('cue-ball')) {
+                cueBallPosition = { row, col };
+            } else if (ball.classList.contains('target-ball')) {
+                targetBallPosition = { row, col };
+            }
         } else {
             console.error(`Cell at row ${row}, col ${col} does not exist.`);
         }
@@ -73,6 +128,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let draggedBall = null;
     let offsetX = 0;
     let offsetY = 0;
+    let isDragging = false;
 
     function startDrag(ball, e) {
         draggedBall = ball;
@@ -82,16 +138,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const clientX = e.touches ? e.touches[0].clientX : e.clientX; // Handle touch event
         const clientY = e.touches ? e.touches[0].clientY : e.clientY; // Handle touch event
 
-        offsetX = clientX - rect.left + (ball.offsetWidth / 6);
-        offsetY = clientY - rect.top + (ball.offsetHeight / 6);
+        offsetX = clientX - rect.left + (ball.offsetWidth / 2);
+        offsetY = clientY - rect.top + (ball.offsetHeight / 2);
 
-        e.preventDefault();
+        e.preventDefault(); // Prevent default behavior
+        isDragging = true; // Set dragging flag
     }
 
     function moveBall(e) {
-        if (draggedBall) {
-            const relativeX = e.touches ? e.touches[0].clientX - grid.getBoundingClientRect().left : e.clientX - grid.getBoundingClientRect().left;
-            const relativeY = e.touches ? e.touches[0].clientY - grid.getBoundingClientRect().top : e.clientY - grid.getBoundingClientRect().top;
+        if (draggedBall && isDragging) {
+            const relativeX = (e.touches ? e.touches[0].clientX : e.clientX) - grid.getBoundingClientRect().left;
+            const relativeY = (e.touches ? e.touches[0].clientY : e.clientY) - grid.getBoundingClientRect().top;
 
             draggedBall.style.top = `${relativeY - offsetY}px`;
             draggedBall.style.left = `${relativeX - offsetX}px`;
@@ -107,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 placeBall(draggedBall, row, col);
             }
             draggedBall = null;
+            isDragging = false; // Reset dragging flag
         }
     }
 
@@ -121,14 +179,18 @@ document.addEventListener('DOMContentLoaded', () => {
         ball.addEventListener('mousemove', moveBall);
         ball.addEventListener('touchmove', (e) => {
             moveBall(e);
-            e.preventDefault(); // Prevent scrolling
-        }, { passive: false }); // Prevent scrolling
+            if (isDragging) {
+                e.preventDefault(); // Prevent scrolling only if dragging
+            }
+        }, { passive: false });
     });
 
     document.addEventListener('mousemove', moveBall);
     document.addEventListener('touchmove', (e) => {
         moveBall(e);
-        e.preventDefault(); // Prevent scrolling
+        if (isDragging) {
+            e.preventDefault(); // Prevent scrolling only if dragging
+        }
     }, { passive: false });
 
     document.addEventListener('mouseup', endDrag);
@@ -151,15 +213,20 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function storeShot(state) {
+        if (!currentUserUid) {
+            console.error('No user is logged in. Shot cannot be stored.');
+            return;
+        }
+
         const shotData = {
+            userId: currentUserUid, // Add user ID to the shot data
             pocket: selectedPocket,
-            cueBallLocation: { row: 15, col: 5 }, // Replace with actual values
-            targetBallLocation: { row: 5, col: 5 }, // Replace with actual values
+            cueBallLocation: cueBallPosition,
+            targetBallLocation: targetBallPosition,
             state: state,
-            timestamp: serverTimestamp() // No need for 'firebase' here
+            timestamp: serverTimestamp()
         };
     
-        // Use the imported Firestore functions
         addDoc(collection(db, 'shots'), shotData)
             .then(() => {
                 console.log('Shot stored successfully');
@@ -167,7 +234,7 @@ document.addEventListener('DOMContentLoaded', () => {
             .catch((error) => {
                 console.error('Error storing shot:', error);
             });
-    }
+    }   
 
     let selectedPocket = null;
 
@@ -195,3 +262,15 @@ document.addEventListener('DOMContentLoaded', () => {
         storeShot('miss');
     });
 });
+
+// Function to log out a user
+async function logoutUser() {
+    try {
+        await signOut(auth);
+        console.log('User logged out');
+        localStorage.removeItem('currentUserUid'); // Clear UID from localStorage
+        window.location.href = 'index.html'; // Redirect to login page
+    } catch (error) {
+        console.error('Logout error:', error);
+    }
+}
