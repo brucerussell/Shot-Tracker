@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
+import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 
 // Your web app's Firebase configuration
@@ -52,7 +52,7 @@ document.addEventListener('DOMContentLoaded', () => {
             pocket: selectedPocket,
             cueBallLocation: cueBallPosition,
             targetBallLocation: targetBallPosition,
-            state: state,
+            made: isMade,
             timestamp: serverTimestamp()
         };
 
@@ -110,6 +110,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Update positions
             if (ball.classList.contains('cue-ball')) {
                 cueBallPosition = { row, col };
+                generateHeatMap();  // Trigger heat map generation when cue ball moves
             } else if (ball.classList.contains('target-ball')) {
                 targetBallPosition = { row, col };
             }
@@ -236,7 +237,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
     }   
 
-    let selectedPocket = null;
+    let selectedPocket = "top-left";
+
+    // Find the top-left pocket and add the 'selected' class to it
+    const topLeftPocket = document.querySelector('.pocket[data-pocket="top-left"]');
+    topLeftPocket.classList.add('selected');
 
     const pockets = document.querySelectorAll('.pocket');
 
@@ -251,16 +256,94 @@ document.addEventListener('DOMContentLoaded', () => {
 
             // Optionally, visually indicate the selected pocket
             e.currentTarget.classList.add('selected');
+
+            // Generate a new heat map
+            generateHeatMap();
         });
     });
 
     document.getElementById('made-btn').addEventListener('click', () => {
-        storeShot('made');
+        storeShot(true);
+        generateHeatMap();  // Trigger heat map generation when new shot
     });
 
     document.getElementById('miss-btn').addEventListener('click', () => {
-        storeShot('miss');
+        storeShot(false);
+        generateHeatMap();  // Trigger heat map generation when new shot
     });
+
+    async function getShotsForCueBallAndPocket(cueBallPosition, selectedPocket) {
+        const shotsRef = collection(db, 'shots');
+        const q = query(
+            shotsRef,
+            where('cueBallLocation', '==', cueBallPosition),
+            where('pocket', '==', selectedPocket)
+        );
+        const snapshot = await getDocs(q);
+        const shots = snapshot.docs.map(doc => doc.data());
+
+        // Debugging: Log retrieved shots
+        console.log("Retrieved shots:", shots);
+
+        return shots;
+    }
+
+    function calculateSuccessPercentages(shots) {
+        const gridStats = {};
+    
+        shots.forEach(shot => {
+            const { targetBallLocation, state } = shot; // use 'state' instead of 'made'
+            const key = `${targetBallLocation.row}-${targetBallLocation.col}`;
+        
+            if (!gridStats[key]) {
+                gridStats[key] = { madeCount: 0, totalCount: 0 };
+            }
+        
+            gridStats[key].totalCount++;
+            if (state) {  // 'state' tracks whether the shot was made
+                gridStats[key].madeCount++;
+            }
+        });
+    
+        // Calculate the percentage for each grid cell
+        Object.keys(gridStats).forEach(key => {
+            const { madeCount, totalCount } = gridStats[key];
+            gridStats[key].percentage = madeCount / totalCount; // Calculate the success percentage
+        });
+    
+        return gridStats;
+    }
+    
+    function getColorFromPercentage(percentage) {
+        const red = Math.round(255 * (1 - percentage)); // More red when percentage is low
+        const green = Math.round(255 * percentage);     // More green when percentage is high
+        return `rgba(${red}, ${green}, 0, 0.3)`;              // Ranges from red (0%) to green (100%)
+    }
+
+    function colorGrid(gridStats) {
+        const cells = document.querySelectorAll('.grid .cell');
+        
+        cells.forEach(cell => {
+            const row = cell.dataset.row;
+            const col = cell.dataset.col;
+            const key = `${row}-${col}`;
+        
+            if (gridStats[key]) {
+                const percentage = gridStats[key].percentage;
+                const color = getColorFromPercentage(percentage);
+                cell.style.backgroundColor = color;
+            } else {
+                // Set background color to transparent if no data exists for this cell
+                cell.style.backgroundColor = 'transparent';
+            }
+        });
+    }    
+
+    async function generateHeatMap() {
+        const shots = await getShotsForCueBallAndPocket(cueBallPosition, selectedPocket);
+        const gridStats = calculateSuccessPercentages(shots);
+        colorGrid(gridStats);
+    }
 });
 
 // Function to log out a user
