@@ -1,6 +1,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
-import { getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
+import { setupAuth, logoutUser } from './auth.js';
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -17,6 +18,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 const auth = getAuth(app); // where `app` is your initialized Firebase app
+
+// Set up auth-related UI
+setupAuth(auth);
 
 let currentUserUid = null;
 
@@ -38,32 +42,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Logout function
     document.getElementById('logout-btn').addEventListener('click', async () => {
-        await logoutUser();
+        await logoutUser(auth);
     });
-
-    function storeShot(state) {
-        if (!currentUserUid) {
-            console.error('No user is logged in. Shot cannot be stored.');
-            return;
-        }
-
-        const shotData = {
-            userId: currentUserUid,
-            pocket: selectedPocket,
-            cueBallLocation: cueBallPosition,
-            targetBallLocation: targetBallPosition,
-            made: isMade,
-            timestamp: serverTimestamp()
-        };
-
-        addDoc(collection(db, 'shots'), shotData)
-            .then(() => {
-                console.log('Shot stored successfully');
-            })
-            .catch((error) => {
-                console.error('Error storing shot:', error);
-            });
-    } 
 
     const grid = document.querySelector('.grid');
     const rows = 21;
@@ -106,14 +86,16 @@ document.addEventListener('DOMContentLoaded', () => {
             ball.style.position = 'absolute';
             ball.style.left = `${centerX - (ball.offsetWidth / 2)}px`;
             ball.style.top = `${centerY - (ball.offsetHeight / 2)}px`;
-
-            // Update positions
-            if (ball.classList.contains('cue-ball')) {
-                cueBallPosition = { row, col };
-                generateHeatMap();  // Trigger heat map generation when cue ball moves
-            } else if (ball.classList.contains('target-ball')) {
-                targetBallPosition = { row, col };
-                generateHeatMap();  // Trigger heat map generation when cue ball moves
+    
+            const isCueBall = ball.classList.contains('cue-ball');
+            const isTargetBall = ball.classList.contains('target-ball');
+    
+            if (isCueBall || isTargetBall) {
+                const newPosition = { row, col };
+                if (isCueBall) cueBallPosition = newPosition;
+                else if (isTargetBall) targetBallPosition = newPosition;
+    
+                generateHeatMapWithDebounce();  // Trigger debounced heat map generation
             }
         } else {
             console.error(`Cell at row ${row}, col ${col} does not exist.`);
@@ -127,47 +109,61 @@ document.addEventListener('DOMContentLoaded', () => {
     }, 0);
 
     // Dragging functionality
+    let isDragging = false;
     let draggedBall = null;
     let offsetX = 0;
     let offsetY = 0;
-    let isDragging = false;
+
+    document.addEventListener('mousemove', moveBall);
+    document.addEventListener('touchmove', (e) => {
+        moveBall(e);
+        if (isDragging) {
+            e.preventDefault(); // Prevent scrolling when dragging
+        }
+    }, { passive: false });
 
     function startDrag(ball, e) {
         draggedBall = ball;
-        ball.style.zIndex = 10;
-
-        const rect = ball.getBoundingClientRect();
-        const clientX = e.touches ? e.touches[0].clientX : e.clientX; // Handle touch event
-        const clientY = e.touches ? e.touches[0].clientY : e.clientY; // Handle touch event
-
-        offsetX = clientX - rect.left + (ball.offsetWidth / 2);
-        offsetY = clientY - rect.top + (ball.offsetHeight / 2);
-
-        e.preventDefault(); // Prevent default behavior
-        isDragging = true; // Set dragging flag
+        isDragging = true;
+        // Calculate offsets and set the ball for dragging...
     }
 
     function moveBall(e) {
-        if (draggedBall && isDragging) {
-            const relativeX = (e.touches ? e.touches[0].clientX : e.clientX) - grid.getBoundingClientRect().left;
-            const relativeY = (e.touches ? e.touches[0].clientY : e.clientY) - grid.getBoundingClientRect().top;
+        if (!isDragging || !draggedBall) return;
 
-            draggedBall.style.top = `${relativeY - offsetY}px`;
-            draggedBall.style.left = `${relativeX - offsetX}px`;
+        // Differentiate between touch and mouse
+        let clientX, clientY;
+        if (e.touches) {  // Touch event
+            clientX = e.touches[0].clientX;
+            clientY = e.touches[0].clientY;
+        } else {  // Mouse event
+            clientX = e.clientX;
+            clientY = e.clientY;
         }
+
+        // Calculate position relative to the grid
+        const gridRect = grid.getBoundingClientRect();
+        const relativeX = clientX - gridRect.left;
+        const relativeY = clientY - gridRect.top;
+
+        draggedBall.style.left = `${relativeX - offsetX}px`;
+        draggedBall.style.top = `${relativeY - offsetY}px`;
     }
 
+    document.addEventListener('mouseup', endDrag);
+    document.addEventListener('touchend', endDrag);
+
     function endDrag() {
-        if (draggedBall) {
-            const cell = getCellUnderMouse(draggedBall);
-            if (cell) {
-                const row = parseInt(cell.dataset.row);
-                const col = parseInt(cell.dataset.col);
-                placeBall(draggedBall, row, col);
-            }
-            draggedBall = null;
-            isDragging = false; // Reset dragging flag
+        if (!draggedBall) return;
+
+        const cell = getCellUnderMouse(draggedBall);
+        if (cell) {
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+            placeBall(draggedBall, row, col);
         }
+        draggedBall = null;
+        isDragging = false;
     }
 
     // Event listeners for both mouse and touch events
@@ -248,43 +244,39 @@ document.addEventListener('DOMContentLoaded', () => {
 
     pockets.forEach(pocket => {
         pocket.addEventListener('click', (e) => {
-            // Deselect all pockets (optional)
             pockets.forEach(p => p.classList.remove('selected'));
-
-            // Set the selected pocket
             selectedPocket = e.currentTarget.dataset.pocket;
-
-            // Optionally, visually indicate the selected pocket
             e.currentTarget.classList.add('selected');
 
-            // Generate a new heat map
-            generateHeatMap();
+            generateHeatMapWithDebounce();  // Trigger debounced heat map generation
         });
     });
 
     document.getElementById('made-btn').addEventListener('click', () => {
         storeShot(true);
-        generateHeatMap();  // Trigger heat map generation when new shot
+        generateHeatMapWithDebounce();  // Trigger debounced heat map generation
     });
 
     document.getElementById('miss-btn').addEventListener('click', () => {
         storeShot(false);
-        generateHeatMap();  // Trigger heat map generation when new shot
+        generateHeatMapWithDebounce();  // Trigger debounced heat map generation
     });
 
     async function getShotsForCueBallAndPocket(cueBallPosition, selectedPocket) {
+        if (!currentUserUid) {
+            console.error('No user is logged in.');
+            return [];
+        }
+    
         const shotsRef = collection(db, 'shots');
         const q = query(
             shotsRef,
             where('cueBallLocation', '==', cueBallPosition),
-            where('pocket', '==', selectedPocket)
+            where('pocket', '==', selectedPocket),
+            where('userId', '==', currentUserUid) // Filter by logged-in user's UID
         );
         const snapshot = await getDocs(q);
         const shots = snapshot.docs.map(doc => doc.data());
-
-        // Debugging: Log retrieved shots
-        console.log("Retrieved shots:", shots);
-
         return shots;
     }
 
@@ -339,34 +331,33 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }    
 
+    let heatMapTimeout;
+
+    function generateHeatMapWithDebounce() {
+        clearTimeout(heatMapTimeout);
+        heatMapTimeout = setTimeout(() => generateHeatMap(), 50); // Adjust the delay as needed
+    }
+
     async function generateHeatMap() {
         // Get shots for the current cue ball position and selected pocket
         const shots = await getShotsForCueBallAndPocket(cueBallPosition, selectedPocket);
         const gridStats = calculateSuccessPercentages(shots);
         colorGrid(gridStats);
     
-        // Display the percentage for the current target ball position
+        // Display the percentage and shot count for the current target ball position
         const key = `${targetBallPosition.row}-${targetBallPosition.col}`;
-        const shotPercentageDisplay = document.getElementById('shot-percentage');
+        const shotInfoDisplay = document.getElementById('shot-info');
     
         if (gridStats[key]) {
             const { madeCount, totalCount } = gridStats[key];
             const percentage = Math.round((madeCount / totalCount) * 100);  // Calculate percentage
-            shotPercentageDisplay.textContent = `${percentage}% success`;
+            shotInfoDisplay.innerHTML = `
+                <div class="shot-info">${totalCount} shots taken</div>
+                <div class="shot-info">${percentage}% success</div>
+            `;
         } else {
-            shotPercentageDisplay.textContent = "No shots here";
+            shotInfoDisplay.innerHTML = '<div class="shot-info">No shots here</div>';
         }
     }
+    
 });
-
-// Function to log out a user
-async function logoutUser() {
-    try {
-        await signOut(auth);
-        console.log('User logged out');
-        localStorage.removeItem('currentUserUid'); // Clear UID from localStorage
-        window.location.href = 'index.html'; // Redirect to login page
-    } catch (error) {
-        console.error('Logout error:', error);
-    }
-}
