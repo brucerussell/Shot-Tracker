@@ -2,6 +2,8 @@ import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.2/fireba
 import { getFirestore, collection, addDoc, serverTimestamp, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore.js";
 import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-auth.js";
 import { setupAuth, logoutUser } from './auth.js';
+import { createGrid, placeBall } from './grid.js';
+
 
 // Your web app's Firebase configuration
 const firebaseConfig = {
@@ -49,14 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const rows = 21;
     const cols = 11;
 
-    // Create grid cells
-    for (let i = 0; i < rows * cols; i++) {
-        const cell = document.createElement('div');
-        cell.classList.add('cell');
-        cell.dataset.row = Math.floor(i / cols);
-        cell.dataset.col = i % cols;
-        grid.appendChild(cell);
-    }
+    createGrid(grid, rows, cols); // Create the grid
 
     // Create cue ball and target ball
     const cueBall = document.createElement('div');
@@ -72,47 +67,22 @@ document.addEventListener('DOMContentLoaded', () => {
     let cueBallPosition = { row: 15, col: 5 }; // Initial position
     let targetBallPosition = { row: 5, col: 5 }; // Initial position
     
-    function placeBall(ball, row, col) {
-        const index = row * cols + col;
-        const cell = grid.children[index];
-    
-        if (cell) {
-            const cellRect = cell.getBoundingClientRect();
-            const gridRect = grid.getBoundingClientRect();
-    
-            const centerX = cellRect.left - gridRect.left + (cellRect.width / 2);
-            const centerY = cellRect.top - gridRect.top + (cellRect.height / 2);
-    
-            ball.style.position = 'absolute';
-            ball.style.left = `${centerX - (ball.offsetWidth / 2)}px`;
-            ball.style.top = `${centerY - (ball.offsetHeight / 2)}px`;
-    
-            const isCueBall = ball.classList.contains('cue-ball');
-            const isTargetBall = ball.classList.contains('target-ball');
-    
-            if (isCueBall || isTargetBall) {
-                const newPosition = { row, col };
-                if (isCueBall) cueBallPosition = newPosition;
-                else if (isTargetBall) targetBallPosition = newPosition;
-    
-                generateHeatMapWithDebounce();  // Trigger debounced heat map generation
-            }
-        } else {
-            console.error(`Cell at row ${row}, col ${col} does not exist.`);
-        }
-    }
-
-    // Use a timeout to allow for ball dimensions to be calculated
     setTimeout(() => {
-        placeBall(cueBall, 15, 5); // Default position
-        placeBall(targetBall, 5, 5); // Default position
+        placeBall(cueBall, grid, 15, 5, cols, (row, col) => {
+            cueBallPosition = { row, col };
+            generateHeatMapWithDebounce(); // Recalculate the heatmap
+        });
+        placeBall(targetBall, grid, 5, 5, cols, (row, col) => {
+            targetBallPosition = { row, col };
+            generateHeatMapWithDebounce();
+        });
     }, 0);
 
     // Dragging functionality
     let isDragging = false;
     let draggedBall = null;
-    let offsetX = 0;
-    let offsetY = 0;
+    let offsetX = 10;
+    let offsetY = 40;
 
     document.addEventListener('mousemove', moveBall);
     document.addEventListener('touchmove', (e) => {
@@ -155,16 +125,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function endDrag() {
         if (!draggedBall) return;
-
+    
         const cell = getCellUnderMouse(draggedBall);
         if (cell) {
-            const row = parseInt(cell.dataset.row);
-            const col = parseInt(cell.dataset.col);
-            placeBall(draggedBall, row, col);
+            const row = parseInt(cell.dataset.row, 10);
+            const col = parseInt(cell.dataset.col, 10);
+    
+            if (!isNaN(row) && !isNaN(col)) {
+                placeBall(draggedBall, grid, row, col, cols, (r, c) => {
+                    if (draggedBall.classList.contains('cue-ball')) {
+                        cueBallPosition = { row: r, col: c };
+                    } else if (draggedBall.classList.contains('target-ball')) {
+                        targetBallPosition = { row: r, col: c };
+                    }
+                    generateHeatMapWithDebounce();
+                });
+            } else {
+                console.error('Invalid row or col:', row, col);
+            }
         }
+    
         draggedBall = null;
         isDragging = false;
     }
+    
 
     // Event listeners for both mouse and touch events
     [cueBall, targetBall].forEach(ball => {
@@ -198,11 +182,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const cells = Array.from(grid.children);
         for (const cell of cells) {
             const rect = cell.getBoundingClientRect();
+            const ballRect = ball.getBoundingClientRect();
+    
+            // Check if the ball overlaps with the cell
             if (
-                ball.getBoundingClientRect().left < rect.right &&
-                ball.getBoundingClientRect().right > rect.left &&
-                ball.getBoundingClientRect().top < rect.bottom &&
-                ball.getBoundingClientRect().bottom > rect.top
+                ballRect.left < rect.right &&
+                ballRect.right > rect.left &&
+                ballRect.top < rect.bottom &&
+                ballRect.bottom > rect.top
             ) {
                 return cell;
             }
