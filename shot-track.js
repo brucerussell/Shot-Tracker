@@ -4,7 +4,6 @@ import { getAuth } from "https://www.gstatic.com/firebasejs/10.13.2/firebase-aut
 import { setupAuth, logoutUser } from './auth.js';
 import { createGrid, placeBall } from './grid.js';
 
-
 // Your web app's Firebase configuration
 const firebaseConfig = {
     apiKey: "AIzaSyCVtMeyc-5EmeCbFsEtJGHEYzyuuLcT8bA",
@@ -67,6 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let cueBallPosition = { row: 15, col: 5 }; // Initial position
     let targetBallPosition = { row: 5, col: 5 }; // Initial position
     
+    // Place initial ball positions
     setTimeout(() => {
         placeBall(cueBall, grid, 15, 5, cols, (row, col) => {
             cueBallPosition = { row, col };
@@ -249,7 +249,8 @@ document.addEventListener('DOMContentLoaded', () => {
         generateHeatMapWithDebounce();  // Trigger debounced heat map generation
     });
 
-    async function getShotsForCueBallAndPocket(cueBallPosition, selectedPocket) {
+    //These are all the shots for a given cueball + pocket
+    async function getShotsForHeatmap(cueBallPosition, selectedPocket) {
         if (!currentUserUid) {
             console.error('No user is logged in.');
             return [];
@@ -262,9 +263,109 @@ document.addEventListener('DOMContentLoaded', () => {
             where('pocket', '==', selectedPocket),
             where('userId', '==', currentUserUid) // Filter by logged-in user's UID
         );
+    
         const snapshot = await getDocs(q);
-        const shots = snapshot.docs.map(doc => doc.data());
+        const shots = snapshot.docs.map(doc => ({
+            ...doc.data(),
+            timestamp: doc.data().timestamp.toDate() // Convert Firestore timestamp to JavaScript Date
+        }));
         return shots;
+    }
+
+    //These are all the shots at a specific cue + target + pocket
+    async function getShotsForHere(cueBallPosition, targetBallPosition, selectedPocket) {
+        if (!currentUserUid) {
+            console.error('No user is logged in.');
+            return [];
+        }
+    
+        const shotsRef = collection(db, 'shots');
+        const q = query(
+            shotsRef,
+            where('cueBallLocation', '==', cueBallPosition),
+            where('targetBallLocation', '==', targetBallPosition), // Match target ball position
+            where('pocket', '==', selectedPocket),
+            where('userId', '==', currentUserUid) // Filter by logged-in user's UID
+        );
+    
+        const snapshot = await getDocs(q);
+        const shots = snapshot.docs.map(doc => ({
+            ...doc.data(),
+            timestamp: doc.data().timestamp.toDate() // Convert Firestore timestamp to JavaScript Date
+        }));
+        return shots;
+    }
+
+    function groupShotsByDate(shots) {
+        const groupedByDate = {};
+    
+        shots.forEach(shot => {
+            const date = shot.timestamp.toISOString().split('T')[0]; // Extract date in YYYY-MM-DD format
+            if (!groupedByDate[date]) {
+                groupedByDate[date] = { madeCount: 0, totalCount: 0 };
+            }
+    
+            groupedByDate[date].totalCount++;
+            if (shot.state) {  // 'state' tracks whether the shot was made
+                groupedByDate[date].madeCount++;
+            }
+        });
+    
+        // Convert the grouped data into an array of objects sorted by date (most recent first)
+        return Object.entries(groupedByDate).map(([date, { madeCount, totalCount }]) => ({
+            date,
+            madeCount,
+            totalCount,
+            percentage: Math.round((madeCount / totalCount) * 100)
+        })).sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+
+    function renderShotList(shotsGroupedByDate) {
+        const shotListContainer = document.getElementById('shot-list');
+        shotListContainer.innerHTML = ''; // Clear the previous list
+    
+        if (shotsGroupedByDate.length === 0) {
+            shotListContainer.innerHTML = '<li id="no-shots">No shots recorded for this position.</li>';
+            return;
+        }
+    
+        shotsGroupedByDate.forEach(shotData => {
+            // Create the list item container
+            const listItem = document.createElement('li');
+            listItem.classList.add('shot-list-item');
+    
+            // Format the date to 'MM/DD'
+            const date = new Date(shotData.date);
+            const formattedDate = `${date.getMonth() + 1}/${date.getDate()}`; // Convert to MM/DD format
+    
+            // Create a div for the bar based on the percentage
+            const percentageBar = document.createElement('div');
+            percentageBar.classList.add('percentage-bar');
+            percentageBar.style.width = `${shotData.percentage}%`; // Width of the bar based on the percentage
+    
+            // Add text on top of the bar
+            const shotDayLabel = document.createElement('div');
+            shotDayLabel.classList.add('shot-date');
+            const dateTextContent = `${formattedDate}`;
+            shotDayLabel.textContent = dateTextContent;
+
+            const shotCount = document.createElement('div');
+            shotCount.classList.add('shot-count');
+            const countTextContent = `Attempts: ${shotData.totalCount}`;
+            shotCount.textContent = countTextContent;
+
+            const shotPercentage = document.createElement('div');
+            shotPercentage.classList.add('shot-percentage');
+            const percentTextContent = `${shotData.percentage}%`;
+            shotPercentage.textContent = percentTextContent;
+    
+            // Append the bar to the list item
+            listItem.appendChild(percentageBar);
+            listItem.appendChild(shotDayLabel);
+            listItem.appendChild(shotCount);
+            listItem.appendChild(shotPercentage);
+            shotListContainer.appendChild(listItem);
+        });
     }
 
     function calculateSuccessPercentages(shots) {
@@ -326,10 +427,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function generateHeatMap() {
-        // Get shots for the current cue ball position and selected pocket
-        const shots = await getShotsForCueBallAndPocket(cueBallPosition, selectedPocket);
-        const gridStats = calculateSuccessPercentages(shots);
+        // Query for the heatmap using only cueBallPosition and selectedPocket
+        const shotsForHeatmap = await getShotsForHeatmap(cueBallPosition, selectedPocket);
+        const gridStats = calculateSuccessPercentages(shotsForHeatmap);
         colorGrid(gridStats);
+    
+        // Query for the shot list using cueBallPosition, targetBallPosition, and selectedPocket
+        const shotsForList = await getShotsForHere(cueBallPosition, targetBallPosition, selectedPocket);
+        
+        // Group shots by date and render the shot list
+        const shotsGroupedByDate = groupShotsByDate(shotsForList);
+        renderShotList(shotsGroupedByDate);
     
         // Display the percentage and shot count for the current target ball position
         const key = `${targetBallPosition.row}-${targetBallPosition.col}`;

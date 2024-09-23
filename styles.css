@@ -156,3 +156,72 @@ button:hover {margin-top: 0px;}
     font-size: 18px;
     color: #704b0a;
 }
+
+#shot-list-container {
+    width: 274px;
+}
+
+#shot-list {
+    list-style: none;
+    padding-left: 0;
+}
+
+#shot-list-heading {
+    color: #77c0f0;
+    margin-left: -35px;
+}
+
+#no-shots {
+    color: #d69e9e;
+    text-align: center;
+}
+
+.shot-date {
+    margin: 0px;
+    position: relative;
+    float: left;
+    top: -14px;
+    color: #77c0f0;
+    margin-left: -34px;
+    font-size: 14px;
+}
+
+.shot-count {
+    margin: 0px;
+    position: relative;
+    float: left;
+    top: -13px;
+    color: #77c0f0;
+    margin-left: 0px;
+    font-size: 13px;
+}
+
+.shot-percentage {
+    margin-right: -38px;
+    position: relative;
+    float: right;
+    top: -14px;
+    color: #77c0f0;
+    margin-left: 0px;
+    font-size: 14px;
+}
+
+.shot-list-item {
+    list-style-type: none;
+    margin-bottom: 7px;
+    background-color: #1f3d60;
+    border-radius: 5px;
+    height: 12px;
+}
+
+.percentage-bar {
+    padding: 0px;
+    border-radius: 5px;
+    height: 12px;
+    text-align: left;
+    white-space: nowrap;
+    font-size: 14px;
+    font-weight: bold;
+    position: relative;
+    background: linear-gradient(to right, #074469, #007acc);
+}
