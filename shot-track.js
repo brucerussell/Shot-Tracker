@@ -423,8 +423,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function generateHeatMapWithDebounce() {
         clearTimeout(heatMapTimeout);
-        heatMapTimeout = setTimeout(() => generateHeatMap(), 50); // Adjust the delay as needed
+        heatMapTimeout = setTimeout(() => generateHeatMap(), 60); // Adjust the delay as needed
     }
+
+    const shotRef = firestore.collection('shots');
+    shotRef.where('userId', '==', userId)
+           .onSnapshot(snapshot => {
+               const shots = getShotsForHeatmap(snapshot);
+               // Generate the heatmap
+               generateHeatMap(shots);
+           });
 
     async function generateHeatMap() {
         // Query for the heatmap using only cueBallPosition and selectedPocket
@@ -447,8 +455,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const { madeCount, totalCount } = gridStats[key];
             const percentage = Math.round((madeCount / totalCount) * 100);  // Calculate percentage
             shotInfoDisplay.innerHTML = `
-                <div class="shot-info">${totalCount} shots taken</div>
-                <div class="shot-info">${percentage}% success</div>
+                <div class="shot-info" style="float: left;">Lifetime Shots: ${totalCount}</div>
+                <div class="shot-info" style="float: right; text-align: right;">Lifetime Success: ${percentage}%</div>
             `;
         } else {
             shotInfoDisplay.innerHTML = '<div class="shot-info">No shots here</div>';

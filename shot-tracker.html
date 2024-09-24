@@ -7,7 +7,6 @@
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <div class="shot-info" id="shot-info" style="height:40px"></div>
     <div class="pool-table">
         <!-- Pockets -->
         <div class="pocket top-left" data-pocket="top-left"></div>
@@ -29,14 +28,18 @@
         <button id="miss-btn">Miss</button>
     </div>
 
+    <div id="shot-info"></div>
+
     <div id="shot-list-container">
         <h3 id="shot-list-heading">Shot History</h3>
         <ul id="shot-list"></ul>
     </div>
 
-    <div class="content">
-        <!-- User email and logout button -->
-        <p id="user-email"></p><button id="logout-btn">Logout</button>
+    <div class="footer">
+        <div class="content">
+            <!-- User email and logout button -->
+            <p id="user-email"></p><button id="logout-btn">Logout</button>
+        </div>
     </div>
     
     <script type="module" src="shot-track.js"></script>

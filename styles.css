@@ -8,7 +8,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    background-color: #2d2215;
+    background-color: #15232d;
     margin: 0;
     height: auto; /* Ensure height is auto */
     overflow-y: scroll;-webkit-overflow-scrolling: touch;
@@ -17,22 +17,22 @@ body {
 .pool-table {
     position: relative;
     width: 307px;
-    height: 615px; /* Keep your original height */
-    background-color: #004d00;
-    border: 20px solid #704b0a;
+    height: 615px;
+    background-color: #0b2c4d;
+    border: 20px solid #475d72;
     border-radius: 10px;
-    margin-top: 25px; /* Adjusted margin */
-    margin-bottom: 20px; /* Space below the table */
+    margin-top: 25px;
+    margin-bottom: 20px;
     box-shadow: 0px 0px 25px;
 }
 
 .pocket {
     position: absolute;
-    background-color: #503216;
+    background-color: #334759;
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    border: 2px solid #704b09;
+    border: 2px solid #475e72;
     z-index: 1;
     box-shadow: 0px 0px 10px inset #1c1200;
 }
@@ -82,7 +82,7 @@ body {
 }
 
 .cell {
-    border: 1px solid rgb(36, 98, 36, 0.5);
+    border: 1px solid rgb(36 75 98 / 50%);
     background-color: rgba(0, 0, 0, 0.2);
     cursor: pointer;
     position: relative;
@@ -111,8 +111,8 @@ body {
     margin-bottom: 20px; /* Space below the buttons */
 }
 
-#made-btn {background-color: #006f00;}
-#miss-btn {background-color: #a40000;}
+#made-btn {background-color: #1a5b88;}
+#miss-btn {background-color: #4e4e4e;}
 #made-btn:hover {background-color: #099c09;}
 #miss-btn:hover {background-color: #c41313;}
 
@@ -129,14 +129,16 @@ button:hover {margin-top: 0px;}
 
 /* Allow the content below to be visible */
 .content {
-    padding: 20px; /* Optional padding */
-    color: white; /* Adjust text color */
+    color: #8b8b8b;
+    width: 342px;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 #user-email {
     float: left;
     padding-right: 40px;
-    border-bottom: 1px dashed #a66327;
+    border-bottom: 1px dashed #586873;
 }
 
 #logout-btn {
@@ -144,17 +146,27 @@ button:hover {margin-top: 0px;}
     padding: 7px 21px;
     margin: 9px;
     border-radius: 5px;
-    background-color: #704b09;
+    background-color: #3b424e;
     border: none;
-    color: #f2bdbd;
+    color: #a8a8a8;
+}
+
+#logout-btn:hover {
+    background-color: #007acc;
+}
+
+#shot-info {
+    height: 27px;
+    width: 342px;
+    border-bottom: 1px solid #495a6f;
 }
 
 .shot-info {
     position: relative;
     top: 5px;
-    text-align: center;
-    font-size: 18px;
-    color: #704b0a;
+    font-size: 15px;
+    color: #77c0f0;
+    width: 155px;
 }
 
 #shot-list-container {
@@ -172,7 +184,7 @@ button:hover {margin-top: 0px;}
 }
 
 #no-shots {
-    color: #d69e9e;
+    color: #968787;
     text-align: center;
 }
 
@@ -224,4 +236,10 @@ button:hover {margin-top: 0px;}
     font-weight: bold;
     position: relative;
     background: linear-gradient(to right, #074469, #007acc);
+}
+
+.footer {
+    width: 100%;
+    background-color: #151a1f;
+    margin-top: 100px;
 }
