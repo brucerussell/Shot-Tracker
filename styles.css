@@ -54,7 +54,7 @@ body {
     z-index: 2;
     width: 100%;
     height: 1px;
-    background-color: #147420e3;
+    background-color: #475e72;
 }
 
 .rack {
@@ -64,7 +64,7 @@ body {
     width: 8px;
     margin-left: -4px;
     height: 8px;
-    background-color: #129722;
+    background-color: #475e72;
     border-radius: 50%;
 }
 
@@ -243,3 +243,35 @@ button:hover {margin-top: 0px;}
     background-color: #151a1f;
     margin-top: 100px;
 }
+
+.diamond {
+    width: 7px;
+    height: 7px;
+    position: absolute;
+    background-color: #1a3856;
+    -ms-transform: rotate(45deg);
+    -webkit-transform: rotate(45deg);
+    transform: rotate(45deg);
+}
+
+.d-1 { left: 22%; top: -14px; }
+.d-2 { left: 50%; top: -14px; }
+.d-3 { left: 76%; top: -14px; }
+
+.d-4 { left: -4.3%; top: 11.4%; }
+.d-5 { left: -4.3%; top: 23.4%; }
+.d-6 { left: -4.3%; top: 35.4% }
+.d-7 { left: -4.3%; top: 63.4%; }
+.d-8 { left: -4.3%; top: 75.4%; }
+.d-9 { left: -4.3%; top: 87.4%; }
+
+.d-10 { left: 102%; top: 11.4%; }
+.d-11 { left: 102%; top: 23.4%; }
+.d-12 { left: 102%; top: 35.4% }
+.d-13 { left: 102%; top: 63.4%; }
+.d-14 { left: 102%; top: 75.4%; }
+.d-15 { left: 102%; top: 87.4%; }
+
+.d-16 { left: 22%; top: 101%; }
+.d-17 { left: 50%; top: 101%; }
+.d-18 { left: 76%; top: 101%; }
