@@ -34,7 +34,7 @@ document.addEventListener('DOMContentLoaded', () => {
             console.log('Current user UID:', currentUserUid); // Debugging line
 
             // Display user's email
-            document.getElementById('user-email').textContent = `User: ${user.email}`;
+            document.getElementById('user-email').textContent = `${user.email}`;
         } else {
             currentUserUid = null; // Reset when logged out
             document.getElementById('user-email').textContent = ''; // Clear email
@@ -397,7 +397,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getColorFromPercentage(percentage) {
         const red = Math.round(255 * (1 - percentage)); // More red when percentage is low
         const green = Math.round(255 * percentage);     // More green when percentage is high
-        return `rgba(${red}, ${green}, 0, 0.3)`;              // Ranges from red (0%) to green (100%)
+        return `rgba(${red}, ${green}, 0, 0.3)`;        // Ranges from red (0%) to green (100%)
     }
 
     function colorGrid(gridStats) {
